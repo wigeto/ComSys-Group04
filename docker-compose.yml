@@ -17,6 +17,7 @@ services:
       retries: 5
       start_period: 15s
       timeout: 30s
+
   caddy:
     image: caddy:2.11.9-alpine
     restart: unless-stopped
@@ -28,4 +29,20 @@ services:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/caddy_data:/data
       - ./data/caddy_config:/config
+      - ./data/step-ca/certs/root_ca.crt:/etc/caddy/root_ca.crt:ro
 
+  step-ca:
+    env_file:
+      - .env
+    image: smallstep/step-ca:0.30.2
+    volumes:
+      - ./data/step-ca:/home/step
+    dns:
+      - 192.168.100.8
+    restart: unless-stopped
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 172.18.0.0/16
