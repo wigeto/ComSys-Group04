@@ -1,2 +1,5 @@
 # Local environment files
 .env
+
+# data
+/data/

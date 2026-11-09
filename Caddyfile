@@ -1,0 +1,17 @@
+# Replace 192.0.2.10:80 with each application's actual VM IP and port.
+
+service1.pilot.internal {
+	reverse_proxy 192.0.2.10:80
+}
+
+service2.pilot.internal {
+	reverse_proxy 192.0.2.10:80
+}
+
+service3.pilot.internal {
+	reverse_proxy 192.0.2.10:80
+}
+
+service4.pilot.internal {
+	reverse_proxy 192.0.2.10:80
+}
