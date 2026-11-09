@@ -7,10 +7,10 @@ services:
     container_name: unbound
     image: madnuttah/unbound:latest
     ports:
-      - 53:5335/tcp
-      - 53:5335/udp
+      - 192.168.100.8:53:5335/tcp
+      - 192.168.100.8:53:5335/udp
     volumes:
-      - ./unbound.conf:/usr/local/etc/unbound/unbound.conf:rw
+      - ./unbound.conf:/usr/local/unbound/unbound.conf:rw
 #     - ./conf.d/:/usr/local/unbound/conf.d/:rw
 #     - ./log.d/unbound.log:/usr/local/unbound/log.d/unbound.log:rw
 #     - ./zones.d/:/usr/local/unbound/zones.d/:rw
