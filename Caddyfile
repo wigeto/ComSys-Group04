@@ -1,42 +1,43 @@
 # Replace 192.0.2.10:80 with each application's actual VM IP and port.
 
-service1.pilot.internal {
+onlyoffice.pilot.internal {
 	tls {
 		issuer acme {
 			dir https://step-ca:9000/acme/acme/directory
 			trusted_roots /etc/caddy/root_ca.crt
 		}
 	}
-	reverse_proxy 192.0.2.10:80
+	reverse_proxy 192.168.100.5:8081
 }
 
-service2.pilot.internal {
+nextcloud.pilot.internal {
 	tls {
 		issuer acme {
 			dir https://step-ca:9000/acme/acme/directory
 			trusted_roots /etc/caddy/root_ca.crt
 		}
 	}
-	reverse_proxy 192.0.2.10:80
+	reverse_proxy 192.168.100.5:80
 }
 
-service3.pilot.internal {
+
+immich.pilot.internal {
 	tls {
 		issuer acme {
 			dir https://step-ca:9000/acme/acme/directory
 			trusted_roots /etc/caddy/root_ca.crt
 		}
 	}
-	reverse_proxy 192.0.2.10:80
+	reverse_proxy 192.168.100.6:2283
 }
 
-service4.pilot.internal {
+media.pilot.internal {
 	tls {
 		issuer acme {
 			dir https://step-ca:9000/acme/acme/directory
 			trusted_roots /etc/caddy/root_ca.crt
 		}
 	}
-	reverse_proxy 192.0.2.10:80
+	reverse_proxy 192.168.100.7:8096
 }
 
