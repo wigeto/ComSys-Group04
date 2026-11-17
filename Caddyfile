@@ -1,20 +1,19 @@
-{
-    acme_ca https://step-ca:9000/acme/acme/directory
-    acme_ca_root /etc/caddy/root_ca.crt
-}
-
-onlyoffice.pilot.internal {
+onlyoffice.comsyslab.csg.uzh.ch {
+    respond /health 200
     reverse_proxy 192.168.100.5:8081
 }
 
-nextcloud.pilot.internal {
+nextcloud.comsyslab.csg.uzh.ch {
+    respond /health 200
     reverse_proxy 192.168.100.5:80
 }
 
-immich.pilot.internal {
+immich.comsyslab.csg.uzh.ch {
+    respond /health 200
     reverse_proxy 192.168.100.6:2283
 }
 
-media.pilot.internal {
+media.comsyslab.csg.uzh.ch {
+    respond /health 200
     reverse_proxy 192.168.100.7:8096
 }

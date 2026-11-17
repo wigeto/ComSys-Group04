@@ -5,6 +5,8 @@ services:
     ports:
       - 192.168.100.8:53:5335/tcp
       - 192.168.100.8:53:5335/udp
+      - 192.41.136.194:53:5335/tcp
+      - 192.41.136.194:53:5335/udp
     volumes:
       - ./unbound.conf:/usr/local/unbound/unbound.conf:rw
 #     - ./conf.d/:/usr/local/unbound/conf.d/:rw
@@ -22,24 +24,13 @@ services:
     image: caddy:2.11.9-alpine
     restart: unless-stopped
     ports:
-      - "192.168.100.8:80:80"
-      - "192.168.100.8:443:443"
-      - "192.168.100.8:443:443/udp"
+      - "192.41.136.194:80:80"
+      - "192.41.136.194:443:443"
+      - "192.41.136.194:443:443/udp"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
       - ./data/caddy_data:/data
       - ./data/caddy_config:/config
-      - ./data/step-ca/certs/root_ca.crt:/etc/caddy/root_ca.crt:ro
-
-  step-ca:
-    env_file:
-      - .env
-    image: smallstep/step-ca:0.30.2
-    volumes:
-      - ./data/step-ca:/home/step
-    dns:
-      - 192.168.100.8
-    restart: unless-stopped
 
 networks:
   default:
