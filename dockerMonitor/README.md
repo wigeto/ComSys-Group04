@@ -11,3 +11,8 @@ username: comsys
 
 password: comsys123
 
+
+# DTOP
+dtop allows to see resource usage and manage docker containers
+
+on the vm run docker attach dtop

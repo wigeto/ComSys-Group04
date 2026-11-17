@@ -1,0 +1,11 @@
+
+services:
+  dtop:
+    image: ghcr.io/amir20/dtop:latest
+    container_name: dtop
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+
