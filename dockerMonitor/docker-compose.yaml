@@ -1,0 +1,31 @@
+services:
+  uptime-kuma:
+    image: louislam/uptime-kuma:2
+    container_name: kuma
+    restart: always
+    ports:
+      - "3001:3001"  # This maps the container port "3001" to the host port "3001"
+    volumes:
+      - /home/comsys/dockerMonitor/data:/app/data  # Configuring persistent storage
+      - /var/run/docker.sock:/var/run/docker.sock  # access to docker host
+    environment:
+      - TZ=UTC  # Set the timezone (change to your preferred local timezone so monitoring times are the same)
+      - UMASK=0022  # Set your file permissions manually
+      - NODE_EXTRA_CA_CERTS=/home/comsys/project/data/step-ca/certs/root_ca.crt
+    networks:
+      - kuma_network  # add your own custom network config
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001"]
+      interval: 30s
+      retries: 3
+      start_period: 10s
+      timeout: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  kuma_network:
+    driver: bridge
