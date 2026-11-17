@@ -17,3 +17,10 @@ media.comsyslab.csg.uzh.ch {
     respond /health 200
     reverse_proxy 192.168.100.7:8096
 }
+
+comsyslab.csg.uzh.ch {
+    redir /immich https://immich.comsyslab.csg.uzh.ch/ 302
+    redir /nextcloud https://nextcloud.comsyslab.csg.uzh.ch/ 302
+    redir /onlyoffice https://onlyoffice.comsyslab.csg.uzh.ch/ 302
+    redir /media https://media.comsyslab.csg.uzh.ch/ 302
+}
