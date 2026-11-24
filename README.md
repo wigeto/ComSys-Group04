@@ -1,65 +1,96 @@
 # Group 04 — Self-Hosting Middleware
 
-Middleware for the Communication Systems Lab: internal DNS, an HTTPS reverse
-proxy, and a private certificate authority for the other teams' services.
-All middleware components run in Docker containers managed through Docker Compose.
+DNS and HTTPS reverse proxy for the Communication Systems Lab, with optional
+Uptime Kuma monitoring and dtop container management.
 
+## Services
 
-## Architecture
+Unbound serves DNS records for `comsyslab.csg.uzh.ch` and its application
+hostnames, all pointing to the middleware VM at `192.41.136.194`. It answers
+local records only; recursive queries for other domains are refused.
 
-Clients use **Unbound** at `192.168.100.8:53` to resolve service names to the
-middleware VM. They then connect to **Caddy** over HTTPS. Caddy forwards each
-request to the corresponding application VM and obtains certificates from
-**step-ca** through ACME.
+Caddy handles HTTPS and routes requests to the application VMs:
 
-All three components run in Docker Compose with persistent bind mounts and
-`restart: unless-stopped`. The Docker subnet is fixed at `172.18.0.0/16` so
-Unbound's access rules remain consistent when containers are recreated.
+| Hostname | Backend |
+| --- | --- |
+| `onlyoffice.comsyslab.csg.uzh.ch` | `192.168.100.5:8081` |
+| `nextcloud.comsyslab.csg.uzh.ch` | `192.168.100.5:80` |
+| `immich.comsyslab.csg.uzh.ch` | `192.168.100.6:2283` |
+| `media.comsyslab.csg.uzh.ch` | `192.168.100.7:8096` |
 
-## Technology decisions
+The root site redirects `/onlyoffice`, `/nextcloud`, `/immich`, and `/media` to
+the corresponding HTTPS site. Each application hostname serves `/caddyHealth`
+with HTTP 200 to check Caddy independently of the backend.
 
-| Component | Choice | Why we chose it |
-| --- | --- | --- |
-| DNS | Unbound | Lightweight recursive resolver with caching, local DNS records, and native DNSSEC support. Fits a small lab with known VM addresses. |
-| Reverse proxy | Caddy | Concise configuration, automatic HTTPS and certificate renewal, and built-in WebSocket proxying. Reduces manual certificate management. |
-| Certificate authority | step-ca | Lightweight private CA with ACME support, allowing Caddy to obtain and renew certificates automatically. Keeps certificate issuance under our control. |
-| Deployment | Docker Compose | Describes services, networks, and storage together, making the deployment easier to reproduce and maintain. |
+## Deployment
 
-These components are open source and can run without proprietary hosted DNS,
-proxy, or certificate services.
+Run from this directory on the middleware VM with Docker Engine and the Compose
+plugin installed. The host needs both `192.168.100.8` and `192.41.136.194`,
+available ports `53`, `80`, and `443`, and access to the application VMs.
+The Docker subnet `172.18.0.0/16` must not overlap existing networks.
 
-We considered dnsmasq and CoreDNS. dnsmasq's combined DNS/DHCP functionality is
-unnecessary for our current scope; Unbound's recursive resolution is a better
-fit. CoreDNS offers a useful plugin architecture for dynamic service discovery
-and Kubernetes, but that flexibility is not currently needed. It could later
-complement Unbound for internal DNS while Unbound retains recursive resolution.
+```sh
+docker compose config --quiet
+docker compose up -d
+docker compose ps
+docker compose logs --tail=100 unbound caddy
+```
 
-## Certificates and security
+Configure DNS in `unbound.conf` and proxy routes in `Caddyfile`. Caddy manages
+HTTPS certificates automatically; issuance requires suitable DNS and network
+reachability for certificate validation. No `.env` file is required.
 
-Caddy explicitly uses step-ca's ACME endpoint at
-`https://step-ca:9000/acme/acme/directory`. It automatically renews service
-certificates before expiry; no separate renewal cron job is required. Renewal
-depends on step-ca being available and able to resolve and reach the service
-hostnames for ACME validation. Caddy's state persists in `data/caddy_data/`.
+DNS and HTTP/HTTPS are published on both host addresses. UDP port 443 for
+HTTP/3 is published only on `192.41.136.194`.
 
-CA private keys are encrypted, stored outside Git, and protected by restricted
-filesystem permissions. Of the CA's files, only the public root certificate is
-mounted into Caddy.
+To stop the stack:
 
-Clients must be connected to the lab network, use our DNS server, and trust
-`data/step-ca/certs/root_ca.crt`. Public DNS does not direct users to this setup.
+```sh
+docker compose down
+```
 
-## Current status
+## Verification
 
-DNS resolution and initial HTTPS certificate issuance through step-ca have been
-verified on the server. Automatic renewal still needs to be observed.
-`service1.pilot.internal` through `service4.pilot.internal` and backend address
-`192.0.2.10:80` are placeholders pending coordination with the other teams.
+From a client with access to the middleware VM:
 
-Backups and disaster recovery remain to be implemented.
+```sh
+dig @192.168.100.8 nextcloud.comsyslab.csg.uzh.ch A
+curl -i --resolve nextcloud.comsyslab.csg.uzh.ch:443:192.41.136.194 \
+  https://nextcloud.comsyslab.csg.uzh.ch/caddyHealth
+```
 
-## References
+Expect DNS to return `192.41.136.194` and the HTTPS check to return HTTP 200.
+Open the application URLs separately to verify backend availability.
 
-- [Unbound](https://www.nlnetlabs.nl/projects/unbound/about/)
-- [Caddy automatic HTTPS](https://caddyserver.com/docs/automatic-https)
-- [step-ca](https://smallstep.com/docs/step-ca/)
+## Monitoring
+
+```sh
+docker compose -f dockerMonitor/docker-compose.yaml up -d
+docker compose -f dtop/docker-compose.yaml up -d
+```
+
+For Uptime Kuma, open an SSH tunnel from your computer using your configured
+`comsys-grp-4` alias, then visit `http://localhost:3001`:
+
+```sh
+ssh -N -L 3001:127.0.0.1:3001 comsys-grp-4
+```
+
+Kuma also publishes port `3001` on all host interfaces. Its Compose file still
+references an old step-ca certificate path without mounting the certificate;
+review that setting if custom CA trust is needed.
+
+For dtop, run `docker attach dtop` on the VM. Detach with `Ctrl-p`, then `Ctrl-q`.
+Both tools mount the host Docker socket and can manage containers.
+
+## Persistent data
+
+Back up these host directories separately from the configuration:
+
+- `data/caddy_data/` — certificates and Caddy state.
+- `data/caddy_config/` — Caddy configuration state.
+- `/home/comsys/dockerMonitor/data` — live Uptime Kuma data.
+
+The tracked files under `dockerMonitor/data` are not necessarily Kuma's live
+database; Compose uses the absolute path above. No backup or restore automation
+is included.
